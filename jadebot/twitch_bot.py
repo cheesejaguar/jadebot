@@ -137,9 +137,7 @@ class JadeBot(commands.Bot):
         """Mod/broadcaster shortcut: increment the death counter from chat."""
         if not _is_privileged(ctx):
             return
-        new = await self._service.increment()
-        if not self._config.announce_deaths:
-            await ctx.send(f"Death #{new} recorded.")
+        await self._service.increment()
 
     @commands.command(name="undeath", aliases=("undodeath",))
     async def cmd_undeath(self, ctx: commands.Context) -> None:
