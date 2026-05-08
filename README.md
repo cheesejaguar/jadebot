@@ -20,16 +20,18 @@ required beyond Twitch itself.
 
 ## Quick start
 
+The project is managed with [`uv`](https://docs.astral.sh/uv/). Install it with
+`curl -LsSf https://astral.sh/uv/install.sh | sh` (or `pipx install uv`), then:
+
 ```bash
 git clone <this repo> jadebot && cd jadebot
-python -m venv .venv && . .venv/bin/activate
-pip install -e .
+uv sync                # creates .venv and installs locked deps + test extras
 
 cp .env.example .env
 # Fill in TWITCH_BOT_USERNAME, TWITCH_OAUTH_TOKEN, TWITCH_CLIENT_ID,
 # BROADCASTER_USER_ID, BOT_USER_ID. See "Configuration" below.
 
-python -m jadebot
+uv run jadebot         # or: uv run python -m jadebot
 ```
 
 Then open:
@@ -165,8 +167,15 @@ Undoing an increment **also** rolls back the witness credits for that death.
 ## Development
 
 ```bash
-pip install -e '.[test]'
-pytest          # 28 tests, ~16s
+uv sync          # installs locked deps + test extras
+uv run pytest    # 28 tests, ~16s
+```
+
+To upgrade dependencies and refresh the lock:
+
+```bash
+uv lock --upgrade
+uv sync
 ```
 
 Layout:
