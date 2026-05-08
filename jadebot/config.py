@@ -69,7 +69,7 @@ class Config:
             broadcaster_login=os.environ.get("BROADCASTER_LOGIN", "jade_infinite").lower(),
             broadcaster_user_id=_required_numeric("BROADCASTER_USER_ID"),
             bot_user_id=_required_numeric("BOT_USER_ID"),
-            web_host=os.environ.get("WEB_HOST", "127.0.0.1"),
+            web_host=os.environ.get("WEB_HOST", "0.0.0.0"),
             web_port=int(os.environ.get("WEB_PORT", "8080")),
             db_path=os.environ.get("DB_PATH", "logs/chat.db"),
             presence_window_sec=int(os.environ.get("PRESENCE_WINDOW_SEC", "600")),

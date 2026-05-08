@@ -5,8 +5,6 @@ import csv
 import io
 import json
 import logging
-from typing import Awaitable, Callable
-
 from aiohttp import web
 
 from .services import KillCounterService
@@ -15,7 +13,6 @@ log = logging.getLogger(__name__)
 
 SERVICE_KEY: web.AppKey[KillCounterService] = web.AppKey("service", KillCounterService)
 
-LOOPBACK = ("127.0.0.1", "::1", "localhost")
 SSE_WRITE_TIMEOUT = 2.0
 SSE_KEEPALIVE_SEC = 15.0
 
@@ -306,19 +303,6 @@ def _render_leaderboard(rows: list[tuple[str, int]]) -> str:
     return LEADERBOARD_HTML.replace("__BODY__", body)
 
 
-@web.middleware
-async def loopback_only_middleware(request: web.Request, handler: Callable[[web.Request], Awaitable[web.StreamResponse]]):
-    """All routes require a loopback peer. Defense in depth on top of the bind address."""
-    peer = request.remote or ""
-    # IPv6-mapped IPv4 like ::ffff:127.0.0.1
-    if peer.startswith("::ffff:"):
-        peer = peer[len("::ffff:") :]
-    if peer not in LOOPBACK:
-        log.warning("Refusing non-loopback request from %s %s %s", request.remote, request.method, request.path)
-        return web.Response(status=403, text="forbidden\n")
-    return await handler(request)
-
-
 async def handle_index(request: web.Request) -> web.Response:
     return web.Response(text=INDEX_HTML, content_type="text/html")
 
@@ -467,7 +451,7 @@ async def handle_events(request: web.Request) -> web.StreamResponse:
 
 
 def make_app(service: KillCounterService) -> web.Application:
-    app = web.Application(middlewares=[loopback_only_middleware])
+    app = web.Application()
     app[SERVICE_KEY] = service
     app.router.add_get("/", handle_index)
     app.router.add_get("/healthz", handle_health)
