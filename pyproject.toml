@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jadebot"
+version = "0.1.0"
+description = "Twitch bot + kill counter for streamer jade_infinite"
+requires-python = ">=3.10"
+dependencies = [
+    "twitchio>=2.9,<3",
+    "aiohttp>=3.9",
+    "aiosqlite>=0.19",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+jadebot = "jadebot.__main__:run"
+
+[tool.setuptools.packages.find]
+include = ["jadebot*"]
