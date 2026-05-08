@@ -14,8 +14,15 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=7.4", "pytest-asyncio>=0.23"]
+
 [project.scripts]
 jadebot = "jadebot.__main__:run"
 
 [tool.setuptools.packages.find]
 include = ["jadebot*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

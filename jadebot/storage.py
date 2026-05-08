@@ -146,3 +146,43 @@ async def recent_speakers(db: aiosqlite.Connection, since_ts: int) -> list[str]:
     ) as cur:
         rows = await cur.fetchall()
     return [r[0] for r in rows if r[0]]
+
+
+async def top_witnesses(
+    db: aiosqlite.Connection, limit: int = 5
+) -> list[tuple[str, int]]:
+    """Return [(user_login, count), ...] ordered by count desc. Excludes zero counts."""
+    async with db.execute(
+        "SELECT user_login, count FROM witnesses"
+        " WHERE count > 0"
+        " ORDER BY count DESC, user_login ASC"
+        " LIMIT ?",
+        (int(limit),),
+    ) as cur:
+        rows = await cur.fetchall()
+    return [(r[0], int(r[1])) for r in rows]
+
+
+async def all_witnesses(
+    db: aiosqlite.Connection,
+) -> list[tuple[str, Optional[str], int, int]]:
+    """Return every witness row as (login, user_id, count, last_seen). Used for export."""
+    async with db.execute(
+        "SELECT user_login, user_id, count, last_seen FROM witnesses"
+        " ORDER BY count DESC, user_login ASC"
+    ) as cur:
+        rows = await cur.fetchall()
+    return [(r[0], r[1], int(r[2]), int(r[3])) for r in rows]
+
+
+async def decrement_witnesses(db: aiosqlite.Connection, logins: Iterable[str]) -> int:
+    """Reverse a previous bump_witnesses(). Used by undo. Clamps at zero."""
+    seen = {l.lower() for l in logins if l}
+    if not seen:
+        return 0
+    await db.executemany(
+        "UPDATE witnesses SET count = MAX(0, count - 1) WHERE user_login = ?",
+        [(login,) for login in seen],
+    )
+    await db.commit()
+    return len(seen)
