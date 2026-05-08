@@ -39,6 +39,7 @@ def make_config(**overrides) -> Config:
         presence_window_sec=600,
         announce_deaths=False,
         history_size=10,
+        debug_chat=False,
     )
     base.update(overrides)
     return Config(**base)

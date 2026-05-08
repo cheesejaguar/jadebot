@@ -133,6 +133,7 @@ directory).
 | `PRESENCE_WINDOW_SEC`  | no       | `600`                | Fallback presence window when Helix is unavailable |
 | `ANNOUNCE_DEATHS`      | no       | `false`              | Post to chat on every death |
 | `UNDO_HISTORY`         | no       | `20`                 | How many actions to keep for undo |
+| `DEBUG_CHAT`           | no       | `false`              | Print every chat message to stdout |
 
 **Generating tokens.** The simplest path:
 
