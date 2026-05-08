@@ -36,9 +36,12 @@ uv run jadebot         # or: uv run python -m jadebot
 
 Then open:
 
-- `http://127.0.0.1:8080/admin` — control surface (only reachable from this PC)
-- `http://127.0.0.1:8080/chroma` — OBS Browser Source URL
-- `http://127.0.0.1:8080/leaderboard` — witness leaderboard
+- `http://<host>:8080/admin` — control surface
+- `http://<host>:8080/chroma` — OBS Browser Source URL
+- `http://<host>:8080/leaderboard` — witness leaderboard
+
+By default the web server binds to `0.0.0.0` so any device on your LAN can
+reach these pages. Set `WEB_HOST=127.0.0.1` to restrict to this machine.
 
 Stop with `Ctrl-C`.
 
@@ -89,9 +92,10 @@ Combine them: `/chroma?label=Yikes&bg=000000&fg=00FFFF&size=18vh`.
   - `Z` — undo
   - `R` — reset session
 
-The `/admin` page (and every other route) refuses connections from anything
-other than `127.0.0.1` / `::1`. Even if you set `WEB_HOST=0.0.0.0` for some
-reason, no one on the LAN can poke the counter.
+The web server has no built-in authentication. With the default
+`WEB_HOST=0.0.0.0`, anyone on the same LAN can reach `/admin` and bump or
+reset the counter. Run on a trusted network, or set `WEB_HOST=127.0.0.1` to
+restrict to the local machine only.
 
 ---
 
@@ -123,7 +127,7 @@ directory).
 | `BROADCASTER_LOGIN`    | no       | `jade_infinite`      | Channel to join |
 | `BROADCASTER_USER_ID`  | yes      | —                    | Numeric Twitch user ID |
 | `BOT_USER_ID`          | yes      | —                    | Numeric Twitch user ID |
-| `WEB_HOST`             | no       | `127.0.0.1`          | Bind address |
+| `WEB_HOST`             | no       | `0.0.0.0`            | Bind address (set to `127.0.0.1` for loopback only) |
 | `WEB_PORT`             | no       | `8080`               | Bind port |
 | `DB_PATH`              | no       | `logs/chat.db`       | SQLite file (WAL) |
 | `PRESENCE_WINDOW_SEC`  | no       | `600`                | Fallback presence window when Helix is unavailable |
@@ -188,7 +192,7 @@ jadebot/
 ├── helix.py       # Get Chatters with auth/transient distinction + retry
 ├── services.py    # KillCounterService: counter, undo, session, SSE pub/sub
 ├── twitch_bot.py  # JadeBot: chat logging + commands
-└── web.py         # aiohttp routes, inline HTML templates, loopback middleware
+└── web.py         # aiohttp routes, inline HTML templates
 tests/
 ├── conftest.py
 ├── test_storage.py
