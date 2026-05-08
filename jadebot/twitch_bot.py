@@ -44,7 +44,7 @@ class JadeBot(commands.Bot):
         if author is None:
             return
         login = (getattr(author, "name", "") or "").lower()
-        if not login or login == self._config.bot_username:
+        if not login:
             return
 
         try:
