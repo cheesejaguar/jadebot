@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+import sys
 import time
+from datetime import datetime
 from typing import Optional
 
 import aiosqlite
@@ -52,6 +54,9 @@ class JadeBot(commands.Bot):
             display_name = getattr(author, "display_name", None) or login
             content = message.content or ""
             ts = int(time.time())
+            if self._config.debug_chat:
+                stamp = datetime.fromtimestamp(ts).strftime("%H:%M:%S")
+                print(f"[{stamp}] {display_name}: {content}", flush=True, file=sys.stdout)
             await storage.log_chat(
                 self._db,
                 ts=ts,

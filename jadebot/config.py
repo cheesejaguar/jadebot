@@ -49,6 +49,7 @@ class Config:
     presence_window_sec: int
     announce_deaths: bool
     history_size: int
+    debug_chat: bool
 
     @property
     def helix_token(self) -> str:
@@ -75,4 +76,5 @@ class Config:
             presence_window_sec=int(os.environ.get("PRESENCE_WINDOW_SEC", "600")),
             announce_deaths=_bool("ANNOUNCE_DEATHS", default=False),
             history_size=int(os.environ.get("UNDO_HISTORY", "20")),
+            debug_chat=_bool("DEBUG_CHAT", default=False),
         )
