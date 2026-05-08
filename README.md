@@ -168,6 +168,48 @@ Undoing an increment **also** rolls back the witness credits for that death.
 
 ---
 
+## Docker
+
+The repository ships with a `Dockerfile` that uses [`uv`](https://docs.astral.sh/uv/)
+to install locked dependencies on top of `ghcr.io/astral-sh/uv:python3.11-bookworm-slim`.
+The container runs `jadebot` as PID 1 and writes SQLite data under `/app/logs`.
+
+Build and run with the included helper script:
+
+```bash
+cp .env.example .env       # then fill it in
+./docker-run.sh            # builds jadebot:latest and runs it
+```
+
+The script honours these env vars:
+
+| Variable   | Default          | Notes                                        |
+| ---------- | ---------------- | -------------------------------------------- |
+| `IMAGE`    | `jadebot:latest` | Tag to build/run                             |
+| `ENV_FILE` | `.env`           | Passed to the container via `--env-file`     |
+| `PORT`     | `8080`           | Host port mapped to container `8080`         |
+| `LOGS_DIR` | `$PWD/logs`      | Bind-mounted at `/app/logs` for the SQLite DB |
+| `NAME`     | `jadebot`        | Container name                               |
+
+Or invoke `docker` directly:
+
+```bash
+docker build -t jadebot:latest .
+docker run --rm -it \
+    --env-file .env \
+    -e WEB_HOST=0.0.0.0 -e WEB_PORT=8080 \
+    -p 8080:8080 \
+    -v "$PWD/logs:/app/logs" \
+    jadebot:latest
+```
+
+`WEB_HOST` is forced to `0.0.0.0` inside the container so the port mapping
+works; the host-side bind is controlled by the `-p` flag. The `logs` volume
+keeps the SQLite database (and its WAL/SHM sidecar files) across container
+restarts.
+
+---
+
 ## Development
 
 ```bash
@@ -198,6 +240,9 @@ tests/
 ├── test_storage.py
 ├── test_service.py
 └── test_web.py
+Dockerfile          # uv-based container image
+.dockerignore
+docker-run.sh       # build + run helper
 ```
 
 ---
