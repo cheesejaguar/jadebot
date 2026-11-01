@@ -23,6 +23,23 @@ async def test_increment_credits_helix_chatters(service, db):
     assert await storage.get_witness_count(db, "alice") == 1
     assert await storage.get_witness_count(db, "bob") == 1
     assert await storage.get_witness_count(db, "bot") == 0
+    # Helix user_ids are cached so the export has them for lurkers too.
+    exported = {login: uid for login, uid, _c, _ts in await service.all_witnesses()}
+    assert exported == {"alice": "1", "bob": "2"}
+
+
+async def test_increment_survives_helix_error_and_uses_fallback(service, db):
+    async def broken_get_chatters():
+        raise RuntimeError("helix down")
+
+    service.helix_stub.get_chatters = broken_get_chatters
+    now = int(time.time())
+    await storage.upsert_speaker(db, user_login="recent", user_id="r", last_seen=now)
+    await storage.upsert_speaker(db, user_login="bot", user_id="b", last_seen=now)
+    assert await service.increment() == 1
+    assert await storage.get_witness_count(db, "recent") == 1
+    # Bot account is excluded from the fallback too.
+    assert await storage.get_witness_count(db, "bot") == 0
 
 
 async def test_increment_falls_back_to_recent_speakers(service, db):

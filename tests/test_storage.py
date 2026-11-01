@@ -41,9 +41,9 @@ async def test_witnesses_lifecycle(db):
     assert await storage.get_witness_count(db, "carol") == 1
 
     top = await storage.top_witnesses(db, limit=10)
-    assert top[0] == ("alice", 2)
-    assert ("bob", 1) in top
-    assert ("carol", 1) in top
+    # Ordered by count desc, then login asc for ties.
+    assert top == [("alice", 2), ("bob", 1), ("carol", 1)]
+    assert await storage.top_witnesses(db, limit=1) == [("alice", 2)]
 
 
 async def test_decrement_witnesses_clamps(db):
@@ -63,8 +63,7 @@ async def test_recent_speakers_window(db):
     await storage.upsert_speaker(db, user_login="recent", user_id="1", last_seen=now)
     await storage.upsert_speaker(db, user_login="ancient", user_id="2", last_seen=now - 3600)
     speakers = await storage.recent_speakers(db, now - 60)
-    assert "recent" in speakers
-    assert "ancient" not in speakers
+    assert speakers == ["recent"]
 
 
 async def test_chat_log_insertion(db):

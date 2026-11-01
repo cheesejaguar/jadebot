@@ -25,6 +25,9 @@ async def server(service):
     base = f"http://127.0.0.1:{port}"
     async with aiohttp.ClientSession() as session:
         yield session, base
+    # Mirror production shutdown (__main__): close SSE subscribers before the
+    # runner, otherwise cleanup blocks until the SSE keepalive timeout fires.
+    await service.aclose()
     await runner.cleanup()
 
 
@@ -33,19 +36,21 @@ async def test_chroma_default_render(server):
     async with session.get(f"{base}/chroma") as r:
         assert r.status == 200
         body = await r.text()
-    assert "Deaths" in body
-    assert "#00FF00" in body  # default green chroma
-    assert "#FF0000" in body  # default red text
+    assert '<span id="label">Deaths</span>: <span id="n">0</span>' in body
+    assert "background: #00FF00;" in body  # default green chroma
+    assert "color: #FF0000;" in body  # default red text
+    assert "font-size: 22vh;" in body
 
 
-async def test_chroma_query_overrides(server):
+async def test_chroma_query_overrides(server, service):
     session, base = server
+    await service.set_count(7)
     async with session.get(f"{base}/chroma?label=Skill+Issues&bg=000000&fg=FFFF00&size=15vh") as r:
         body = await r.text()
-    assert "Skill Issues" in body
-    assert "#000000" in body
-    assert "#FFFF00" in body
-    assert "15vh" in body
+    assert '<span id="label">Skill Issues</span>: <span id="n">7</span>' in body
+    assert "background: #000000;" in body
+    assert "color: #FFFF00;" in body
+    assert "font-size: 15vh;" in body
 
 
 async def test_chroma_rejects_invalid_color(server):
@@ -53,8 +58,16 @@ async def test_chroma_rejects_invalid_color(server):
     async with session.get(f"{base}/chroma?bg=javascript:alert(1)") as r:
         body = await r.text()
     # Falls back to default when the color is invalid.
-    assert "#00FF00" in body
+    assert "background: #00FF00;" in body
     assert "javascript:" not in body
+
+
+async def test_chroma_escapes_label(server):
+    session, base = server
+    async with session.get(f"{base}/chroma", params={"label": "<script>x</script>"}) as r:
+        body = await r.text()
+    assert "<script>x</script>" not in body
+    assert '<span id="label">&lt;script&gt;x&lt;/script&gt;</span>' in body
 
 
 async def test_increment_decrement_undo_roundtrip(server):
@@ -76,15 +89,32 @@ async def test_increment_decrement_undo_roundtrip(server):
     assert s4["count"] == 0
 
 
-async def test_set_validates_input(server):
+async def test_set_validates_input(server, service):
     session, base = server
     async with session.post(f"{base}/admin/set", data={"count": "nope"}) as r:
         assert r.status == 400
+        assert (await r.json())["error"] == "'count' must be an integer"
     async with session.post(f"{base}/admin/set", data={"count": "-1"}) as r:
         assert r.status == 400
+        assert (await r.json())["error"] == "'count' must be >= 0"
+    async with session.post(f"{base}/admin/set", data={}) as r:
+        assert r.status == 400
+        assert (await r.json())["error"] == "missing 'count'"
+    # Rejected requests must not touch the counter.
+    assert await service.get_count() == 0
     async with session.post(f"{base}/admin/set", data={"count": "42"}) as r:
         s = await r.json()
     assert s["count"] == 42
+    assert await service.get_count() == 42
+
+
+async def test_set_accepts_json_body(server, service):
+    session, base = server
+    async with session.post(f"{base}/admin/set", json={"count": 13}) as r:
+        assert r.status == 200
+        s = await r.json()
+    assert s["count"] == 13
+    assert await service.get_count() == 13
 
 
 async def test_session_reset(server):
@@ -132,8 +162,7 @@ async def test_healthz(server):
     session, base = server
     async with session.get(f"{base}/healthz") as r:
         data = await r.json()
-    assert data["status"] == "ok"
-    assert "count" in data and "session" in data
+    assert data == {"status": "ok", "count": 0, "session": 0, "can_undo": False}
 
 
 async def test_sse_emits_initial_and_updates(server):
