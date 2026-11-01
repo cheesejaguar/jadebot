@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import html
 import io
 import json
 import logging
@@ -274,7 +275,8 @@ def _safe_size(value: str, default: str) -> str:
 
 
 def _render_chroma(count: int, query) -> str:
-    label = (query.get("label") or "Deaths")[:32]
+    # The label is user-controlled (query string), so escape it before it lands in HTML.
+    label = html.escape((query.get("label") or "Deaths")[:32])
     bg = _safe_color(query.get("bg", ""), "#00FF00")
     fg = _safe_color(query.get("fg", ""), "#FF0000")
     size = _safe_size(query.get("size", ""), "22vh")
